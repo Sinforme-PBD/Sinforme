@@ -16,15 +16,11 @@ def remover_acentos(txt):
     return normalize('NFKD', txt).encode('ASCII','ignore').decode('ASCII').upper()
 
 def inserirBanco(cursor, nomeTabela, lista):
-   cursor.execute("""INSERT INTO """ + nomeTabela + """ VALUES ("%s","%s","%s","%s","%s", %d, %d)""" % (lista[0],lista[1],lista[2],lista[3],lista[4],lista[5],lista[6] ) )
+   cursor.execute("""INSERT INTO """ + nomeTabela + """ VALUES ("%s","%s","%s","%s","%s", %f, %f)""" % (lista[0],lista[1],lista[2],lista[3],lista[4],lista[5],lista[6] ) )
    con.commit()
 
 def checkHeader(listHeader, defaultHeader):
-	#textHeader = ';'.join(listHeader)
 	listDefault = defaultHeader.split(";")
-	#print("header === ",listHeader)
-	#print("defaul === ",listDefault)
-	#if textHeader == defaultHeader:
 	if listHeader == listDefault:
 		return True
 	else:	
@@ -36,6 +32,21 @@ def checkValue(value):
 	else:
 		return -9999 # -9999 representa Vlaor inválido
 
+def strToFloat(texto):
+	texto = texto.replace(" ", "")
+	if texto == "":
+		texto = "0.0"
+	elif texto.count(",") == 1:
+		texto = texto.replace(",", ".")
+	try:
+                if texto.count(".") <= 1:
+                        if texto.replace(".", "").isdigit():
+                                return float(texto)
+                        else:
+                                return -8888.88 #"A string contem caracteres que nao sao numeros."
+			
+	except ValueError:
+		return -9999.99 #"Erro"
 
 def insertCSVinDB(fileName, tableName, headerDefault):
 	ifile  = open('arquivos/'+fileName+'.csv', 'r', encoding="utf-8-sig") 
@@ -51,13 +62,13 @@ def insertCSVinDB(fileName, tableName, headerDefault):
 				header = row
 				resultHeader = checkHeader(header, headerDefault) # True or False
 			elif resultHeader:
-				#print("ANTES === ",row)
-				row[8] = checkValue(row[8])
-				row[9] = checkValue(row[9])			
+				print("ANTES === ",row)
+				row[8] = strToFloat(row[8])
+				row[9] = strToFloat(row[9])			
 				
 				for x in excecaoElementos[::-1]: #Inverte a lista antes de remover os elementos
 					row.pop(x)
-				#print("DEPOIS === ",row)
+				print("DEPOIS === ",row)
 				inserirBanco(cursor, tableName, row)
 			else:
 				print('Erro no Header do arquivo selecionado')				
@@ -73,7 +84,7 @@ cabecalhoTabelaEmenda = "ID_PROPOSTA;QUALIF_PROPONENTE;COD_PROGRAMA_EMENDA;NR_EM
 if __name__ == '__main__':
 	#colocar nome do arquivo csv (sem a extensao)
 	start = timeit.default_timer()
-	nomeArqEmenda = 'siconv_emendaE'
+	nomeArqEmenda = 'siconv_emenda3'
 	insertCSVinDB(nomeArqEmenda, 'EMENDA', cabecalhoTabelaEmenda)
 
 	stop = timeit.default_timer() 
