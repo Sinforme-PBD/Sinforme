@@ -17,10 +17,13 @@ def remover_acentos(txt):
     return normalize('NFKD', txt).encode('ASCII', 'ignore').decode('ASCII').upper()
 
 
-def inserirBanco(cursor, lista):
-    cursor.execute(
+def inserirBanco(cursor, nomeTabela, lista):
+    cursor.execute("""INSERT INTO """ + nomeTabela + """ (NOME, NOME_COMPLETO, SIGLA_PARTIDO, FUNCAO) VALUES 
+    ("%s","%s","%s","%s")""" % (lista[0], lista[1], lista[2], lista[3] ) )
+    
+    '''cursor.execute(
         """INSERT INTO partido_parlamentar (nome_sem_acento, nome_completo, sigla_partido) VALUES ("%s","%s","%s")""" % (
-        lista[0], lista[1], lista[2]))
+        lista[0], lista[1], lista[2]))'''
     con.commit()
 
 
@@ -32,7 +35,7 @@ def checkHeader(listHeader, defaultHeader):
         return False
 
 
-def insertCSVinDB(fileName, headerDefault, parlamentar):
+def insertCSVinDB(fileName, tableName, headerDefault, parlamentar):
     ifile = open('arquivos/' + fileName + '.csv', 'r')
     read = csv.reader(ifile, delimiter=';')
     header = []
@@ -44,13 +47,13 @@ def insertCSVinDB(fileName, headerDefault, parlamentar):
                 resultHeader = checkHeader(header, headerDefault)  # True or False
             elif resultHeader:
                 if parlamentar == 's':
-                    listRowDB = [remover_acentos(row[1]), remover_acentos(row[2]), row[8]]
+                    listRowDB = [remover_acentos(row[1]), remover_acentos(row[2]), row[8], "SENADOR"]
                 elif parlamentar == 'd':
-                    listRowDB = [row[14], remover_acentos(row[16]), row[1]]
+                    listRowDB = [row[14], remover_acentos(row[16]), row[1], "DEPUTADO"]
                 else:
                     print("Ocorreu um erro no tipo de parlamentar escolhido.")
                     break
-                inserirBanco(cursor, listRowDB)
+                inserirBanco(cursor, tableName, listRowDB)
             else:
                 print('Erro no Header do arquivo selecionado')
                 break
@@ -68,10 +71,12 @@ cabecalhoTabelaDeputados = "Nome Parlamentar;Partido;UF;Titular/Suplente/Efetiva
 if __name__ == '__main__':
     start = timeit.default_timer()
     # colocar nome do arquivo csv (sem a extensao)
-    nomeArqSenadores = 'atual_v2'
-    insertCSVinDB(nomeArqSenadores, cabecalhoTabelaSenadores, 's')
+    print("UC01 - Senadores e Deputados ")
+    print("Importação sendo executada ... ")
+    nomeArqSenadores = 'senadores'
+    insertCSVinDB(nomeArqSenadores, 'PARLAMENTAR', cabecalhoTabelaSenadores, 's')
     nomeArqDeputados = 'deputado'
-    insertCSVinDB(nomeArqDeputados, cabecalhoTabelaDeputados, 'd')
-
+    insertCSVinDB(nomeArqDeputados, 'PARLAMENTAR', cabecalhoTabelaDeputados, 'd')
+    
     stop = timeit.default_timer()
     print("Tempo de execucao: ", stop - start)
