@@ -23,7 +23,7 @@ def inserirBanco(cursor, nomeTabela, lista):
 def consultarBanco (cursor, nomeTabela, nomeColuna1, nomeColuna2, valor):
     print("valor ===",valor)
     try:
-        cursor.execute("""SELECT """ + nomeColuna1 + """ FROM """ + nomeTabela + """ WHERE NOME = '%s'""" % valor )    
+        cursor.execute("""SELECT """ + nomeColuna1 + """ FROM """ + nomeTabela + """ WHERE """ + nomeColuna2 + """ = '%s'""" % valor )    
         result = cursor.fetchone()[0]
     except TypeError as e:
         print(e)
@@ -41,7 +41,7 @@ def checkValue(value):
     if value.isdigit():
         return int(value)
     else:
-        return -9999  # -9999 representa Vlaor inválido
+        return -9999  # -9999 representa Valor inválido
 
 
 def strToFloat(texto):
@@ -74,7 +74,6 @@ def insertCSVinDB(fileName, tableName, headerDefault):
                 resultHeader = checkHeader(header, headerDefault)  # True or False
             elif resultHeader:
                 #Geracao da tabela Emenda 
-                #print("ANTES === ", row)
                 row[4] = consultarBanco(cursor, 'PARLAMENTAR', 'ID_PARLAMENTAR', 'NOME', row[4] )
                 print("row4 == ",row[4])
                 if row[7] == 'INDIVIDUAL' and row[4] != None:
@@ -82,7 +81,6 @@ def insertCSVinDB(fileName, tableName, headerDefault):
                     row[9] = strToFloat(row[9])
                     for x in excecaoElementosEmenda[::-1]:  # Inverte a lista antes de remover os elementos
                         row.pop(x)
-                    #print("DEPOIS === ", row)
                     inserirBanco(cursor, tableName, row)
             else:
                 print('Erro no Header do arquivo selecionado')
@@ -93,7 +91,6 @@ def insertCSVinDB(fileName, tableName, headerDefault):
     print("O numero de Emendas importadas foi:", rownum - 1)
     ifile.close()
     con.close()
-
 
 cabecalhoTabelaEmenda = "ID_PROPOSTA;QUALIF_PROPONENTE;COD_PROGRAMA_EMENDA;NR_EMENDA;NOME_PARLAMENTAR;BENEFICIARIO_EMENDA;IND_IMPOSITIVO;TIPO_PARLAMENTAR;VALOR_REPASSE_PROPOSTA_EMENDA;VALOR_REPASSE_EMENDA"
 
