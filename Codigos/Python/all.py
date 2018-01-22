@@ -205,6 +205,8 @@ if __name__ == '__main__':
         user="root",
         passwd="admin",
         db="sinformedb"  # Nome da Base de dados gerado pelo diagrama logico
+        use_unicode = True,
+        charset = "utf8"
     )
     db_cursor = db.cursor()
 
