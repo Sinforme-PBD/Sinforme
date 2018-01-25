@@ -9,7 +9,14 @@ import timeit
 
 from unicodedata import normalize
 
-con = MySQLdb.connect(host='localhost', user='admin', passwd='admin123', db='sinformedb')
+con = MySQLdb.connect(
+        host="127.0.0.1",
+        user="root",
+        passwd="",
+        db="siconvdb",  # Nome da Base de dados gerado pelo diagrama logico
+        use_unicode = True,
+        charset = "utf8"
+    )
 cursor = con.cursor()
 
 
@@ -18,9 +25,9 @@ def remover_acentos(txt):
 
 
 def inserirBanco(cursor, nomeTabela, lista):
-    cursor.execute("""INSERT INTO """ + nomeTabela + """ (NOME, NOME_COMPLETO, SIGLA_PARTIDO, FUNCAO) VALUES 
+    cursor.execute("""INSERT INTO """ + nomeTabela + """ (NOME, NOME_COMPLETO, SIGLA_PARTIDO, FUNCAO) VALUES
     ("%s","%s","%s","%s")""" % (lista[0], lista[1], lista[2], lista[3] ) )
-    
+
     '''cursor.execute(
         """INSERT INTO partido_parlamentar (nome_sem_acento, nome_completo, sigla_partido) VALUES ("%s","%s","%s")""" % (
         lista[0], lista[1], lista[2]))'''
@@ -77,6 +84,6 @@ if __name__ == '__main__':
     insertCSVinDB(nomeArqSenadores, 'PARLAMENTAR', cabecalhoTabelaSenadores, 's')
     nomeArqDeputados = 'deputado'
     insertCSVinDB(nomeArqDeputados, 'PARLAMENTAR', cabecalhoTabelaDeputados, 'd')
-    
+
     stop = timeit.default_timer()
     print("Tempo de execucao: ", stop - start)

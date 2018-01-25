@@ -9,7 +9,14 @@ import timeit
 
 from unicodedata import normalize
 
-con = MySQLdb.connect(host='localhost', user='admin', passwd='admin123', db='sinformedb')
+con = MySQLdb.connect(
+        host="127.0.0.1",
+        user="root",
+        passwd="",
+        db="siconvdb",  # Nome da Base de dados gerado pelo diagrama logico
+        use_unicode = True,
+        charset = "utf8"
+    )
 cursor = con.cursor()
 
 def remover_acentos(txt):
@@ -23,11 +30,11 @@ def inserirBanco(cursor, nomeTabela, lista):
 def consultarBanco (cursor, nomeTabela, nomeColuna1, nomeColuna2, valor):
     print("valor ===",valor)
     try:
-        cursor.execute("""SELECT """ + nomeColuna1 + """ FROM """ + nomeTabela + """ WHERE """ + nomeColuna2 + """ = '%s'""" % valor )    
+        cursor.execute("""SELECT """ + nomeColuna1 + """ FROM """ + nomeTabela + """ WHERE """ + nomeColuna2 + """ = '%s'""" % valor )
         result = cursor.fetchone()[0]
     except TypeError as e:
         print(e)
-        result = None   
+        result = None
     return result
 
 def checkHeader(listHeader, defaultHeader):
@@ -73,7 +80,7 @@ def insertCSVinDB(fileName, tableName, headerDefault):
                 header = row
                 resultHeader = checkHeader(header, headerDefault)  # True or False
             elif resultHeader:
-                #Geracao da tabela Emenda 
+                #Geracao da tabela Emenda
                 row[4] = consultarBanco(cursor, 'PARLAMENTAR', 'ID_PARLAMENTAR', 'NOME', row[4] )
                 print("row4 == ",row[4])
                 if row[7] == 'INDIVIDUAL' and row[4] != None:

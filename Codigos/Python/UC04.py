@@ -12,7 +12,9 @@ def gravarDados(tabela, header, insert):
         host="127.0.0.1",
         user="root",
         passwd="",
-        db="siconvdb"  # Nome da Base de dados gerado pelo diagrama logico
+        db="siconvdb",  # Nome da Base de dados gerado pelo diagrama logico
+        use_unicode = True,
+        charset = "utf8"
     )
 
     sql = 'INSERT INTO ' + tabela + ' VALUES (' + ('%s,' * len(header))[0:-1] + ')'
