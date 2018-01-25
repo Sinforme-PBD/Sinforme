@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import MySQLdb as my
 import csv
 from unicodedata import normalize
