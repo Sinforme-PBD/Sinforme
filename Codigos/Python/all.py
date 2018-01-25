@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import MySQLdb as my
 import csv
 from unicodedata import normalize
 import timeit
 
-FORMAT_NUMBER = lambda x: x.replace(",", ".")
+FORMAT_NUMBER = lambda x: x.replace(",", ".").replace("\u200b", "")
 FORMAT_IDENTITY = lambda x: x
-FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("'", "''")
-FORMAT_NON_UTF8_CHARS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(x.replace('\U00100070', '').replace('\\', '\\\\').replace('􀀹', ''))
+FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("\\", "").replace("'", "''")
+FORMAT_NON_UTF8_CHARS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(x.replace('\U00100070', '').replace('\\', '\\\\').replace('􀀹', '').replace('􀂳', ''))
 FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x).encode('ASCII', 'ignore').decode('ASCII').upper())
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 500
@@ -66,7 +64,7 @@ MUNICIPIO_CONFIG = {
     'columns_to_insert': ["MUNIC_PROPONENTE", "COD_MUNIC_IBGE"],
     'insert_value_format': "('{}', {})",
     'row_formatters': [FORMAT_ESCAPE_SINGLE_QUOTE, FORMAT_NUMBER],
-    'insert_command': "REPLACE"
+    'insert_command': "INSERT IGNORE" # Ignore porque tem algumas propostas sem COD_MUNIC_IBGE
 }
 
 PROPONENTE_CONFIG = {
@@ -111,8 +109,128 @@ CONVENIO_CONFIG = {
     'insert_value_format': '({}, {}'+ (", '{}'" * 16) + (", {}" * 11) + ')',
     'row_formatters': [FORMAT_NUMBER] * 2 + [FORMAT_ESCAPE_SINGLE_QUOTE] * 3 + [FORMAT_DATE] \
     + [FORMAT_ESCAPE_SINGLE_QUOTE] * 12 + [FORMAT_NUMBER] * 11,
-    'allow_null_columns': True,
-    'insert_command': "INSERT IGNORE"
+    'insert_command': "INSERT"
+}
+
+DESEMBOLSO_CONFIG = {
+    'csv_file_name': 'siconv_desembolso',
+    'csv_expected_header': 'NR_CONVENIO;DT_ULT_DESEMBOLSO;QTD_DIAS_SEM_DESEMBOLSO;DATA_DESEMBOLSO;ANO_DESEMBOLSO;MES_DESEMBOLSO;NR_SIAFI;VL_DESEMBOLSADO',
+    'csv_columns_indexes': [0, 1, 2, 3, 6, 7],
+    'table_name': 'desembolso',
+    'columns_to_insert': ["NR_CONVENIO", "DT_ULT_DESEMBOLSO", "QTD_DIAS_SEM_DESEMBOLSO", "DATA_DESEMBOLSO", "NR_SIAFI", "VL_DESEMBOLSADO"],
+    'insert_value_format': "({}, '{}', {}, '{}', '{}', {})",
+    'row_formatters': [FORMAT_NUMBER, FORMAT_DATE, FORMAT_NUMBER, FORMAT_DATE, FORMAT_ESCAPE_SINGLE_QUOTE, FORMAT_NUMBER],
+    'insert_command': "INSERT"
+}
+
+META_CONFIG = {
+    'csv_file_name': 'siconv_meta_crono_fisico',
+    'csv_expected_header': 'ID_META;NR_CONVENIO;COD_PROGRAMA;NOME_PROGRAMA;NR_META;TIPO_META;DESC_META;DATA_INICIO_META;DATA_FIM_META;UF_META;MUNICIPIO_META;ENDERECO_META;CEP_META;QTD_META;UND_FORNECIMENTO_META;VL_META',
+    'csv_columns_indexes': [0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    'table_name': 'meta',
+    'columns_to_insert': ["ID_META", "NR_CONVENIO", "NR_META", "TIPO_META", "DESC_META", "DATA_INICIO_META", "DATA_FIM_META", "UF_META", "MUNIC_META", "ENDERECO_META", "CEP_META", "QTD_META", "UND_FORNECIMENTO_META", "VL_META"],
+    'insert_value_format': "({}, {}, {}, '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', {})",
+    'row_formatters': [FORMAT_NUMBER] * 3 + [FORMAT_ESCAPE_SINGLE_QUOTE] * 2 + [FORMAT_DATE] * 2 + [FORMAT_ESCAPE_SINGLE_QUOTE] * 4 + [FORMAT_NUMBER] + [FORMAT_ESCAPE_SINGLE_QUOTE] + [FORMAT_NUMBER],
+    'insert_command': "INSERT"
+}
+
+TERMO_ADITIVO_CONFIG = {
+    'csv_file_name': 'siconv_termo_aditivo',
+    'csv_expected_header': 'NR_CONVENIO;NUMERO_TA;TIPO_TA;VL_GLOBAL_TA;VL_REPASSE_TA;VL_CONTRAPARTIDA_TA;DT_ASSINATURA_TA;DT_INICIO_TA;DT_FIM_TA;JUSTIFICATIVA_TA',
+    'csv_columns_indexes': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    'table_name': 'termo_aditivo',
+    'columns_to_insert': ["NR_CONVENIO", "NUMERO_TA", "TIPO_TA", "VL_GLOBAL_TA", "VL_REPASSE_TA", "VL_CONTRAPARTIDA_TA", "DT_ASSINATURA_TA", "DT_INICIO_TA", "DT_FIM_TA", "JUSTIFICATIVA_TA"],
+    'insert_value_format': "({}, '{}', '{}', {}, {}, {}, '{}', '{}', '{}', '{}')",
+    'row_formatters': [FORMAT_NUMBER] + [FORMAT_IDENTITY] * 2 + [FORMAT_NUMBER] * 3 + [FORMAT_DATE] * 3 + [FORMAT_NON_UTF8_CHARS],
+    'insert_command': "INSERT"
+}
+
+EMPENHO_CONFIG = {
+    'csv_file_name': 'siconv_empenho',
+    'csv_expected_header': 'NR_CONVENIO;NR_EMPENHO;TIPO_NOTA;DESC_TIPO_NOTA;DATA_EMISSAO;COD_SITUACAO_EMPENHO;DESC_SITUACAO_EMPENHO;VALOR_EMPENHO',
+    'csv_columns_indexes': [0, 1, 2, 3, 4, 5, 6, 7],
+    'table_name': 'empenho',
+    'columns_to_insert': ["NR_CONVENIO", "NR_EMPENHO", "TIPO_NOTA", "DESC_TIPO_NOTA", "DATA_EMISSAO", "COD_SITUACAO_EMPENHO", "DESC_SITUACAO_EMPENHO", "VALOR_EMPENHO"],
+    'insert_value_format': "({}, '{}', '{}', '{}', '{}', {}, '{}', {})",
+    'row_formatters': [FORMAT_NUMBER] + [FORMAT_IDENTITY] * 2 + [FORMAT_ESCAPE_SINGLE_QUOTE] + [FORMAT_DATE] + [FORMAT_NUMBER] + [FORMAT_ESCAPE_SINGLE_QUOTE] + [FORMAT_NUMBER],
+    'insert_command': "INSERT"
+}
+
+HISTORICO_SITUACAO_CONFIG = {
+    'csv_file_name': 'siconv_historico_situacao',
+    'csv_expected_header': 'ID_PROPOSTA;NR_CONVENIO;DIA_HISTORICO_SIT;HISTORICO_SIT;DIAS_HISTORICO_SIT;COD_HISTORICO_SIT',
+    'csv_columns_indexes': [0, 1, 2, 3, 4, 5],
+    'table_name': 'historico_situacao',
+    'columns_to_insert': ["ID_PROPOSTA", "NR_CONVENIO", "DIA_HISTORICO_SIT", "HISTORICO_SIT", "DIAS_HISTORICO_SIT", "COD_HISTORICO_SIT"],
+    'insert_value_format': "({}, {}, '{}', '{}', {}, {})",
+    'row_formatters': [FORMAT_NUMBER] * 2 + [FORMAT_DATE] + [FORMAT_ESCAPE_SINGLE_QUOTE] + [FORMAT_NUMBER] * 2,
+    'insert_command': "INSERT"
+}
+
+EMENDA_CONFIG = {
+    'csv_file_name': 'siconv_emenda',
+    'csv_expected_header': 'ID_PROPOSTA;QUALIF_PROPONENTE;COD_PROGRAMA_EMENDA;NR_EMENDA;NOME_PARLAMENTAR;BENEFICIARIO_EMENDA;IND_IMPOSITIVO;TIPO_PARLAMENTAR;VALOR_REPASSE_PROPOSTA_EMENDA;VALOR_REPASSE_EMENDA',
+    'csv_columns_indexes': [0, 3, 5, 6, 8, 9],
+    'table_name': 'emenda',
+    'columns_to_insert': ["ID_PROPOSTA", "NR_EMENDA", "BENEFICIARIO_EMENDA", "IND_IMPOSITIVO", "VL_REPASSE_PROPOSTA_EMENDA", "VL_REPASSE_EMENDA"],
+    'insert_value_format': "({}, {}, {}, '{}', {}, {})",
+    'row_formatters': [FORMAT_NUMBER] * 3 + [FORMAT_IDENTITY] + [FORMAT_NUMBER] * 2,
+    'insert_command': "INSERT"
+}
+
+PAGAMENTO_CONFIG = {
+    'csv_file_name': 'siconv_pagamento',
+    'csv_expected_header': 'NR_MOV_FIN;NR_CONVENIO;IDENTIF_FORNECEDOR;NOME_FORNECEDOR;TP_MOV_FINANCEIRA;DATA_PAG;NR_DL;DESC_DL;VL_PAGO',
+    'csv_columns_indexes': [0, 1, 2, 4, 5, 6, 8],
+    'table_name': 'pagamento',
+    'columns_to_insert': ["NR_MOV_FIN", "NR_CONVENIO", "IDENTIF_FORNECEDOR", "TP_MOV_FINANCEIRA", "DATA_PAG", "NR_DL", "VL_PAGO"],
+    'insert_value_format': "({}, {}, {}, '{}', {}, {})",
+    'row_formatters': [FORMAT_NUMBER] * 3 + [FORMAT_IDENTITY] + [FORMAT_DATE] + [FORMAT_NUMBER] * 2,
+    'insert_command': "INSERT"
+}
+
+DOCUMENTO_DE_LIQUIDACAO_CONFIG = {
+    'csv_file_name': 'siconv_pagamento',
+    'csv_expected_header': 'NR_MOV_FIN;NR_CONVENIO;IDENTIF_FORNECEDOR;NOME_FORNECEDOR;TP_MOV_FINANCEIRA;DATA_PAG;NR_DL;DESC_DL;VL_PAGO',
+    'csv_columns_indexes': [6, 7],
+    'table_name': 'documento_de_liquidacao',
+    'columns_to_insert': ["NR_DL", "DESC_DL"],
+    'insert_value_format': "({}, '{}')",
+    'row_formatters': [FORMAT_NUMBER] + [FORMAT_IDENTITY],
+    'insert_command': "INSERT"
+}
+
+FORNECEDOR_CONFIG = {
+    'csv_file_name': 'siconv_pagamento',
+    'csv_expected_header': 'NR_MOV_FIN;NR_CONVENIO;IDENTIF_FORNECEDOR;NOME_FORNECEDOR;TP_MOV_FINANCEIRA;DATA_PAG;NR_DL;DESC_DL;VL_PAGO',
+    'csv_columns_indexes': [2, 3],
+    'table_name': 'fornecedor',
+    'columns_to_insert': ["IDENTIF_FORNECEDOR", "NOME_FORNECEDOR"],
+    'insert_value_format': "({}, '{}')",
+    'row_formatters': [FORMAT_NUMBER] + [FORMAT_IDENTITY],
+    'insert_command': "INSERT"
+}
+
+OBTV_CONVENENTE_CONFIG = {
+    'csv_file_name': 'siconv_obtv_convenente',
+    'csv_expected_header': 'NR_MOV_FIN;IDENTIF_FAVORECIDO_OBTV_CONV;NM_FAVORECIDO_OBTV_CONV;TP_AQUISICAO;VL_PAGO_OBTV_CONV',
+    'csv_columns_indexes': [0, 1, 3, 4],
+    'table_name': 'obtv_convenente',
+    'columns_to_insert': ["NR_MOV_FIN", "IDENTIF_FAVORECIDO_OBTV_CONV", "TP_AQUISICAO", "VL_PAGO_OBTV_CONV"],
+    'insert_value_format': "({}, '{}', '{}', {})",
+    'row_formatters': [FORMAT_NUMBER] + [FORMAT_IDENTITY] * 2 + [FORMAT_NUMBER],
+    'insert_command': "INSERT"
+}
+
+FAVORECIDO_OBTV_CONFIG = {
+    'csv_file_name': 'siconv_obtv_convenente',
+    'csv_expected_header': 'NR_MOV_FIN;IDENTIF_FAVORECIDO_OBTV_CONV;NM_FAVORECIDO_OBTV_CONV;TP_AQUISICAO;VL_PAGO_OBTV_CONV',
+    'csv_columns_indexes': [1, 2],
+    'table_name': 'favorecido_obtv',
+    'columns_to_insert': ["IDENTIF_FAVORECIDO_OBTV_CONV", "NM_FAVORECIDO_OBTV_CONV"],
+    'insert_value_format': "('{}', '{}')",
+    'row_formatters': [FORMAT_IDENTITY] * 2,
+    'insert_command': "INSERT"
 }
 
 def insert_values_on_database(db_cursor, table_name, insert_command, columns_to_insert, insert_values):
@@ -169,7 +287,7 @@ def convert_csv_to_sql_insert_values(config):
     row_formatters = config['row_formatters']
     insert_value_format = config['insert_value_format']
     csv_columns_indexes = config['csv_columns_indexes']
-    allow_null_columns = config.get('allow_null_columns', False)
+    allow_null_columns = config.get('allow_null_columns', True)
 
     ifile = open('arquivos/' + file_name + '.csv', 'r', encoding="utf-8")
     reader = csv.reader(ifile, delimiter=';')
@@ -205,18 +323,25 @@ if __name__ == '__main__':
     db = my.connect(
         host="127.0.0.1",
         user="root",
-        passwd="admin",
-        db="sinformedb"  # Nome da Base de dados gerado pelo diagrama logico
+        passwd="",
+        db="sinformedb", # Nome da Base de dados gerado pelo diagrama logico
         use_unicode = True,
         charset = "utf8"
     )
     db_cursor = db.cursor()
 
-    process(db_cursor, SENADORES_CONFIG)
-    process(db_cursor, DEPUTADOS_CONFIG)
-    process(db_cursor, ORGAO_SUP_CONFIG)
-    process(db_cursor, ORGAO_CONFIG)
-    process(db_cursor, MUNICIPIO_CONFIG)
-    process(db_cursor, PROPONENTE_CONFIG)
-    process(db_cursor, PROPOSTA_CONFIG)
-    process(db_cursor, CONVENIO_CONFIG)
+    #process(db_cursor, SENADORES_CONFIG)
+    #process(db_cursor, DEPUTADOS_CONFIG)
+    #process(db_cursor, ORGAO_SUP_CONFIG)
+    #process(db_cursor, ORGAO_CONFIG)
+    #process(db_cursor, MUNICIPIO_CONFIG)
+    #process(db_cursor, PROPONENTE_CONFIG)
+    #process(db_cursor, PROPOSTA_CONFIG)
+    #process(db_cursor, CONVENIO_CONFIG)
+    #process(db_cursor, DESEMBOLSO_CONFIG)
+    #process(db_cursor, META_CONFIG)
+    #process(db_cursor, TERMO_ADITIVO_CONFIG)
+    #process(db_cursor, EMPENHO_CONFIG)
+    # Terminar!
+    #process(db_cursor, HISTORICO_SITUACAO_CONFIG)
+    process(db_cursor, EMENDA_CONFIG)
