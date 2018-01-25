@@ -289,7 +289,7 @@ def convert_csv_to_sql_insert_values(config):
     csv_columns_indexes = config['csv_columns_indexes']
     allow_null_columns = config.get('allow_null_columns', True)
 
-    ifile = open('arquivos/' + file_name + '.csv', 'r', encoding="utf-8")
+    ifile = open('arquivos/' + file_name + '.csv', 'r', encoding="utf-8") # windows usa "utf-8-sig"
     reader = csv.reader(ifile, delimiter=';')
 
     insert_values = list()
